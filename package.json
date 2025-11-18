@@ -1,0 +1,41 @@
+{
+  "name": "rxwa",
+  "version": "1.0.0",
+  "description": "A lightweight utility library that converts modern Web APIs—such as Web Serial, Web USB, Web Bluetooth, and more—into RxJS-based observable streams. Simplify event handling, device communication, and asynchronous workflows with clean, reactive primitives.",
+  "keywords": [
+    "web-api",
+    "rxjs"
+  ],
+  "license": "MIT",
+  "author": "Ersin Çabuk <ersincabuk13@gmail.com> (https://ersincabuk.dev/)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ErsinCabuk/rxwa.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ErsinCabuk/rxwa/issues"
+  },
+  "homepage": "https://github.com/ErsinCabuk/rxwa#readme"
+}
