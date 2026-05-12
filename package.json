@@ -1,11 +1,22 @@
 {
   "name": "rxwa",
-  "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "build": "bun run build.ts && tsc",
+    "clean": "rm -rf build"
+  },
+  "exports": {
+    "./web-serial": {
+      "import": "./build/web-serial/index.js",
+      "types": "./build/web-serial/index.d.ts"
+    }
+  },
   "devDependencies": {
+    "@biomejs/biome": "2.4.15",
     "@types/bun": "latest"
   },
   "peerDependencies": {
+    "rxjs": "^7.8.2",
     "typescript": "^5"
   }
 }
