@@ -22,7 +22,8 @@
 		"formatter": {
 			"quoteStyle": "single",
 			"semicolons": "asNeeded",
-			"arrowParentheses": "asNeeded"
+			"arrowParentheses": "asNeeded",
+			"operatorLinebreak": "before"
 		}
 	},
 	"assist": {

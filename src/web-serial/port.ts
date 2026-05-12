@@ -4,101 +4,47 @@ import {
 	map,
 	merge,
 	Observable,
-	of,
 	shareReplay,
 	startWith,
-	switchMap,
-	throwError,
 } from 'rxjs'
-import {
-	READABLE_ERROR,
-	SERIAL_PORT_NOT_FOUND_ERROR,
-	WRITABLE_ERROR,
-} from './error'
-import { getSerial } from './serial'
+import { READABLE_ERROR, WRITABLE_ERROR } from './error'
 import type {
 	SerialInputSignals,
 	SerialOptions,
 	SerialOutputSignals,
 	SerialPort,
-	SerialPortFilter,
 	SerialPortInfo,
-	SerialPortRequestOptions,
 } from './type'
 
 export class ReactiveSerialPort {
-	constructor(protected port?: SerialPort) {}
-
-	request(options?: SerialPortRequestOptions): Observable<this> {
-		return getSerial().pipe(
-			switchMap(serial => from(serial.requestPort(options))),
-			map(port => {
-				this.port = port
-				return this
-			}),
-		)
-	}
-
-	get(filter: SerialPortFilter): Observable<this> {
-		return getSerial().pipe(
-			switchMap(serial => from(serial.getPorts())),
-			switchMap(ports => {
-				const port = ports.find(port => {
-					const info = port.getInfo()
-
-					const keys = Object.keys(filter) as (keyof SerialPortFilter)[]
-					return keys.every(
-						key => filter[key] === undefined || info[key] === filter[key],
-					)
-				})
-
-				if (!port) {
-					return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
-				}
-
-				this.port = port
-				return of(this)
-			}),
-		)
-	}
+	constructor(protected port: SerialPort) {}
 
 	getInfo(): SerialPortInfo {
-		if (!this.port) throw SERIAL_PORT_NOT_FOUND_ERROR
-		return this.port?.getInfo()
+		return this.port.getInfo()
 	}
 
 	open(options: SerialOptions): Observable<void> {
-		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
 		return from(this.port.open(options))
 	}
 
 	close(): Observable<void> {
-		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
 		return from(this.port.close())
 	}
 
 	forget(): Observable<void> {
-		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
 		return from(this.port.forget())
 	}
 
 	getSignals(): Observable<SerialInputSignals> {
-		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
 		return from(this.port.getSignals())
 	}
 
 	setSignals(options?: SerialOutputSignals): Observable<void> {
-		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
 		return from(this.port.setSignals(options))
 	}
 
 	read(): Observable<Uint8Array> {
 		return new Observable<Uint8Array>(subscriber => {
-			if (!this.port) {
-				subscriber.error(SERIAL_PORT_NOT_FOUND_ERROR)
-				return
-			}
-
 			if (!this.port.readable) {
 				subscriber.error(READABLE_ERROR)
 				return
@@ -139,11 +85,6 @@ export class ReactiveSerialPort {
 
 	write(chunk: Uint8Array): Observable<void> {
 		return new Observable<void>(subscriber => {
-			if (!this.port) {
-				subscriber.error(SERIAL_PORT_NOT_FOUND_ERROR)
-				return
-			}
-
 			if (!this.port.writable) {
 				subscriber.error(WRITABLE_ERROR)
 				return
@@ -167,7 +108,6 @@ export class ReactiveSerialPort {
 	}
 
 	state(): Observable<boolean> {
-		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
 		return merge(
 			fromEvent(this.port, 'connect').pipe(map(() => true)),
 			fromEvent(this.port, 'disconnect').pipe(map(() => false)),
@@ -175,15 +115,5 @@ export class ReactiveSerialPort {
 			startWith(this.port.connected),
 			shareReplay({ bufferSize: 1, refCount: true }),
 		)
-	}
-
-	onConnect(): Observable<Event> {
-		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
-		return fromEvent(this.port, 'connect')
-	}
-
-	onDisconnect(): Observable<Event> {
-		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
-		return fromEvent(this.port, 'disconnect')
 	}
 }

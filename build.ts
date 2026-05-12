@@ -4,6 +4,7 @@ async function build() {
 	const { success, logs } = await Bun.build({
 		entrypoints: ['src/web-serial/index.ts'],
 		outdir: 'dist',
+		root: 'src',
 		target: 'browser',
 		minify: true,
 		splitting: true,

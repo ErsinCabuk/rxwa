@@ -1,3 +1,4 @@
+export * from './base-serial-port'
 export * from './error'
 export * from './port'
 export * from './serial'

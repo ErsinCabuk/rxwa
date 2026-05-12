@@ -1,15 +1,36 @@
-# rxwa
+# RXWA
 
-To install dependencies:
+**RXWA** is a lightweight, modern, and fully TypeScript-based library that wraps the Web API's as **RxJS Observables**.
+It converts SignalR’s Promise-based and callback-based API into a reactive, composable model.
 
-```bash
-bun install
-```
-
-To run:
+## Installation
 
 ```bash
-bun run index.ts
+bun install rxwa
 ```
 
-This project was created using `bun init` in bun v1.3.13. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+```bash
+npm install rxwa
+```
+
+## Usage
+
+```ts
+import { BaseSerialPort } from "rxwa/web-serial";
+
+export class XCardReaderAndWriter extends BaseSerialPort {
+  writeMode() {
+    const command = new Uint8Array([...])
+    return this.write(command)
+  }
+
+  readCard() {
+    return this.read()
+      .pipe(
+        // mapping
+        // flows
+        // etc.
+      )
+  }
+}
+```
