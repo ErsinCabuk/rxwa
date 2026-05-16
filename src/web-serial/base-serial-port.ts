@@ -29,21 +29,29 @@ import type {
 export abstract class BaseSerialPort {
 	protected port?: SerialPort
 
+	get connected(): boolean {
+		return !!this.port?.connected
+	}
+
 	constructor(protected filter: SerialPortFilter) {}
 
-	request(options?: SerialPortRequestOptions): Observable<this> {
+	request(options?: SerialPortRequestOptions): Observable<void> {
 		return getSerial().pipe(
 			switchMap(serial =>
-				from(serial.requestPort({ filters: [this.filter], ...options })),
+				from(
+					serial.requestPort({
+						...options,
+						filters: [this.filter, ...(options?.filters ?? [])],
+					}),
+				),
 			),
 			map(port => {
 				this.port = port
-				return this
 			}),
 		)
 	}
 
-	get(): Observable<this> {
+	get(): Observable<void> {
 		return getSerial().pipe(
 			switchMap(serial => from(serial.getPorts())),
 			switchMap(ports => {
@@ -61,12 +69,10 @@ export abstract class BaseSerialPort {
 					)
 				})
 
-				if (!port) {
-					return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
-				}
+				if (!port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
 
 				this.port = port
-				return of(this)
+				return of(undefined)
 			}),
 		)
 	}
@@ -76,19 +82,19 @@ export abstract class BaseSerialPort {
 		return this.port?.getInfo()
 	}
 
-	open(options: SerialOptions): Observable<this> {
+	open(options: SerialOptions): Observable<void> {
 		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
-		return from(this.port.open(options)).pipe(map(() => this))
+		return from(this.port.open(options))
 	}
 
-	close(): Observable<this> {
+	close(): Observable<void> {
 		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
-		return from(this.port.close()).pipe(map(() => this))
+		return from(this.port.close())
 	}
 
-	forget(): Observable<this> {
+	forget(): Observable<void> {
 		if (!this.port) return throwError(() => SERIAL_PORT_NOT_FOUND_ERROR)
-		return from(this.port.forget()).pipe(map(() => this))
+		return from(this.port.forget())
 	}
 
 	state(): Observable<boolean> {
@@ -125,31 +131,28 @@ export abstract class BaseSerialPort {
 			}
 
 			const reader = this.port.readable.getReader()
-			let is = true
 
-			function next() {
-				reader
-					.read()
-					.then(({ value, done }) => {
+			async function readLoop() {
+				try {
+					while (true) {
+						const { value, done } = await reader.read()
 						if (done) {
 							subscriber.complete()
-							return
+							break
 						}
 
 						subscriber.next(value)
-					})
-					.catch(error => {
-						subscriber.error(error)
-					})
-					.finally(() => {
-						if (is) next()
-					})
+					}
+				} catch (error) {
+					subscriber.error(error)
+				} finally {
+					reader.releaseLock()
+				}
 			}
 
-			next()
+			readLoop()
 
 			return () => {
-				is = false
 				reader.cancel().catch(() => {
 					console.error('Failed to cancel the reader')
 				})
@@ -169,7 +172,14 @@ export abstract class BaseSerialPort {
 				return
 			}
 
-			const writer = this.port.writable.getWriter()
+			let writer: WritableStreamDefaultWriter<Uint8Array>
+
+			try {
+				writer = this.port.writable.getWriter()
+			} catch (error) {
+				subscriber.error(error)
+				return
+			}
 
 			writer
 				.write(chunk)
